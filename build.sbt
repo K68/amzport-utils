@@ -1,7 +1,7 @@
 name := "amzport-utils"
- 
+
 version := "0.0.1"
-      
+
 lazy val `amzportutils` = (project in file(".")).enablePlugins(PlayScala)
 
 resolvers += "Aliyun Releases" at "http://maven.aliyun.com/nexus/"
@@ -25,7 +25,11 @@ libraryDependencies ++= Seq(
 
   // slick-pg extension
   "com.github.tminglei" %% "slick-pg" % "0.17.2",
-  "com.github.tminglei" %% "slick-pg_play-json" % "0.17.2"
+  "com.github.tminglei" %% "slick-pg_play-json" % "0.17.2",
+
+  // sttp
+  "com.softwaremill.sttp" %% "core" % "1.6.5"
+
 )
 
       
