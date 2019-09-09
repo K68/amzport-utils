@@ -1,14 +1,18 @@
 package controllers
 
-import java.time.OffsetDateTime
+import java.io.File
 
-import com.softwaremill.sttp._
+import com.google.common.io.Files
 import javax.inject._
-import play.api.libs.json.Json
+import play.api.Environment
+import play.api.cache.AsyncCacheApi
+import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.Json.obj
 import play.api.mvc._
 import services.FetchCenter
 
-import scala.concurrent.Future
+import scala.concurrent.duration.Duration
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * This controller creates an `Action` to handle HTTP requests to the
@@ -16,7 +20,10 @@ import scala.concurrent.Future
  */
 @Singleton
 class HomeController @Inject()(cc: ControllerComponents,
+                               environment: Environment,
+                               cache: AsyncCacheApi,
                                fetchCenter: FetchCenter,
+                               implicit val executionContext: ExecutionContext
                               ) extends AbstractController(cc) {
 
   /**
@@ -29,26 +36,26 @@ class HomeController @Inject()(cc: ControllerComponents,
     Ok(views.html.index("Your new application is ready."))
   }
 
-  implicit val backend = HttpURLConnectionBackend()
-
-  def testFetch = Action.async {
-    val startTime = OffsetDateTime.now().toInstant.toEpochMilli
-    val req1 = sttp.get(uri"http://120.27.0.232/access/dashboard/?access_key=APIsXTOG8fIDqru5ehlmCpE")
-    val rep1 = req1.send()
-
-    val timestamp = OffsetDateTime.now().toInstant.toEpochMilli
-    val req2 = sttp.get(uri"http://120.27.0.232/access/user/stats/?_=$timestamp").cookies(rep1)
-    val rep2 = req2.send()
-
-    val costTime = OffsetDateTime.now().toInstant.toEpochMilli - startTime
-
-    fetchCenter.testFetch()
-
-    rep2.body match {
-      case Right(x) => Future.successful(Ok(Json.obj("status" ->"OK", "costTime" -> costTime, "message" -> x)))
-      case Left(x) => Future.successful(Ok(Json.obj("status" ->"OK", "costTime" -> costTime, "message" -> "error")))
+  def setApiKey(): Action[JsValue] = Action.async(parse.json) { req =>
+    val apiKey = (req.body \ "apiKey").as[String]
+    cache.set("API_KEY", apiKey, Duration.Inf).map { _ =>
+      val rootPath = environment.rootPath
+      val outPut = new File(rootPath, "meta.json")
+      val meta = Json.obj("api" -> apiKey)
+      try {
+        Files.write(meta.toString().getBytes, outPut)
+        Ok(obj(fields = "data" -> true,  "status" -> "success"))
+      } catch {
+        case e: Exception =>
+          Ok(obj(fields = "data" -> e.getMessage,  "status" -> "error"))
+      }
     }
+  }
 
+  def testFetch(): Action[AnyContent] = Action.async {
+    fetchCenter.testFetch().map { result =>
+      Ok(Json.obj("status" ->"OK", "data" -> Json.toJson(result)))
+    }
 //    Future.successful(Ok(Json.obj("status" ->"OK", "message" -> "Hello World")))
   }
 

@@ -34,6 +34,7 @@ class FetchCenter @Inject() (appLifecycle: ApplicationLifecycle,
         println(result)
         val costTime = OffsetDateTime.now().toInstant.toEpochMilli - startTime
         println(s"CostTime: $costTime ms")
+        result
     }
   }
 }
