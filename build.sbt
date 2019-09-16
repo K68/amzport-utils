@@ -19,6 +19,7 @@ libraryDependencies ++= Seq(
 
   // play & slick bind
   "com.typesafe.play" %% "play-slick" % "4.0.0",
+  "com.typesafe.slick" %% "slick-codegen" % "3.3.2",
 
   // postgresql
   "org.postgresql" % "postgresql" % "42.2.5",
@@ -28,7 +29,15 @@ libraryDependencies ++= Seq(
   "com.github.tminglei" %% "slick-pg_play-json" % "0.17.2",
 
   // sttp
-  "com.softwaremill.sttp" %% "core" % "1.6.5"
+  "com.softwaremill.sttp" %% "core" % "1.6.5",
+
+  // csv tools
+  "com.nrinaudo" %% "kantan.csv" % "0.5.1",
+  "com.nrinaudo" %% "kantan.csv-java8" % "0.5.1",
+  "com.nrinaudo" %% "kantan.csv-generic" % "0.5.1",
+
+  // hash helper
+  "com.roundeights" %% "hasher" % "1.2.0"
 
 )
 

@@ -10,7 +10,7 @@ import play.api.libs.json.Json
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class FetchService @Inject()(val configuration: Configuration,
+class FetchService @Inject()(configuration: Configuration,
                              implicit val executionContext: ExecutionContext) {
 
   implicit val backend = HttpURLConnectionBackend()
