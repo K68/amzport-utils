@@ -26,3 +26,38 @@ POST    /addOneObserver             controllers.LocalController.addOneObserver
 POST    /removeOneObserver          controllers.LocalController.removeOneObserver
 
 POST    /updateOneObserver          controllers.LocalController.updateOneObserver
+
+
+POST    /queryAllUser               controllers.RemoteController.queryAllUser
+
+POST    /queryUserApiKey            controllers.RemoteController.queryUserApiKey
+
+POST    /queryUserObserver          controllers.RemoteController.queryUserObserver
+
+POST    /queryObserverMonitor       controllers.RemoteController.queryObserverMonitor
+
+POST    /login                      controllers.RemoteController.login
+
+POST    /logout                     controllers.RemoteController.logout
+
+POST    /addUser                    controllers.RemoteController.addUser
+
+POST    /updateUserPassword         controllers.RemoteController.updateUserPassword
+
+POST    /updateUserApiLimit         controllers.RemoteController.updateUserApiLimit
+
+POST    /updateSelfPassword         controllers.RemoteController.updateSelfPassword
+
+POST    /addSelfApiKey              controllers.RemoteController.addSelfApiKey
+
+POST    /updateSelfApiKey           controllers.RemoteController.updateSelfApiKey
+
+POST    /fetchAllObservers          controllers.RemoteController.fetchAllObservers
+
+POST    /addOneObserver             controllers.RemoteController.addOneObserver
+
+POST    /removeOneObserver          controllers.RemoteController.removeOneObserver
+
+POST    /updateOneObserver          controllers.RemoteController.updateOneObserver
+
+POST    /addAllObservers            controllers.RemoteController.addAllObservers

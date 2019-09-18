@@ -46,10 +46,10 @@ class FetchCenter @Inject() (appLifecycle: ApplicationLifecycle,
     }
   }
 
-  def updateAllObservers(observers: Array[(String, String)]) = {
-    apiService.updateAllObservers(observers).map {
+  def addAllObservers(observers: Array[(String, String)]) = {
+    apiService.addAllObservers(observers).map {
       case true =>
-        observersCache = observers
+        observersCache = (observersCache.toSet ++ observers).toArray
         true
       case false =>
         false

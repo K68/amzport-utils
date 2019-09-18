@@ -94,7 +94,7 @@ class LocalController @Inject()(cc: ControllerComponents,
                 Future.successful(Ok(obj(fields = "data" -> "观察者链接超过3000的上限",  "status" -> "error")))
               } else {
                 val observers = ifReader.toArray.filter(i => i.isRight).map(i => i.right.get)
-                fetchCenter.updateAllObservers(observers).map {
+                fetchCenter.addAllObservers(observers).map {
                   case true =>
                     Ok(obj(fields = "data" -> true,  "status" -> "success")).withNewSession
                   case false =>

@@ -5,11 +5,12 @@ import java.io.File
 import com.google.common.io.Files
 import com.softwaremill.sttp.HttpURLConnectionBackend
 import javax.inject.{Inject, Singleton}
-import play.api.Environment
+import play.api.{Configuration, Environment}
 import play.api.cache.AsyncCacheApi
 import play.api.libs.json.Json
 import com.softwaremill.sttp._
 import com.roundeights.hasher.Implicits._
+import repo.RepoCase.ObserverRow
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
@@ -17,12 +18,15 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class ApiService @Inject() (
                              environment: Environment,
+                             configuration: Configuration,
                              cache: AsyncCacheApi,
                              implicit val executionContext: ExecutionContext
                            ) {
 
   implicit val backend = HttpURLConnectionBackend()
-  val saltValue = "AMZPORT_UTIL"
+  val saltValue = "mol-rand-salt"
+
+  val remoteCenterURL = configuration.underlying.getString("RemoteCenterURL")
 
   def checkLocalLogin(localPasswd: String): Future[Boolean] = {
     getApiKey().map { keys =>
@@ -96,26 +100,123 @@ class ApiService @Inject() (
     }
   }
 
-  def updateAllObservers(observers: Array[(String, String)]): Future[Boolean] = {
-    // TODO
-    Future.successful(true)
+  def addAllObservers(observers: Array[(String, String)]): Future[Boolean] = {
+    getApiKey().map { keys =>
+      if (keys._2.isEmpty) {
+        false
+      } else {
+        val (nicknames, observeUrls) = observers.unzip
+        val toSend = Json.obj("apiKey" -> keys._2, "nicknames" -> nicknames, "observeUrls" -> observeUrls)
+        val req = sttp.post(uri"$remoteCenterURL/addAllObservers")
+          .header("Content-Type", "application/json")
+          .body(Json.stringify(toSend))
+        val rep = req.send()
+
+        rep.body match {
+          case Right(x) =>
+            (Json.parse(x) \ "status").asOpt[String].getOrElse("") == "success"
+          case Left(e) =>
+            println(s"FetchOneObserver Exception: $e")
+            false
+        }
+      }
+    }
   }
 
   def addOneObserver(observer: (String, String)): Future[Boolean] = {
-    Future.successful(true)
+    getApiKey().map { keys =>
+      if (keys._2.isEmpty) {
+        false
+      } else {
+        val toSend = Json.obj("apiKey" -> keys._2, "nickname" -> observer._1, "observeUrl" -> observer._2)
+        val req = sttp.post(uri"$remoteCenterURL/addOneObserver")
+          .header("Content-Type", "application/json")
+          .body(Json.stringify(toSend))
+        val rep = req.send()
+
+        rep.body match {
+          case Right(x) =>
+            (Json.parse(x) \ "status").asOpt[String].getOrElse("") == "success"
+          case Left(e) =>
+            println(s"FetchOneObserver Exception: $e")
+            false
+        }
+      }
+    }
   }
 
   def removeOneObserver(observer: (String, String)): Future[Boolean] = {
-    Future.successful(true)
+    getApiKey().map { keys =>
+      if (keys._2.isEmpty) {
+        false
+      } else {
+        val toSend = Json.obj("apiKey" -> keys._2, "nickname" -> observer._1, "observeUrl" -> observer._2)
+        val req = sttp.post(uri"$remoteCenterURL/removeOneObserver")
+          .header("Content-Type", "application/json")
+          .body(Json.stringify(toSend))
+        val rep = req.send()
+
+        rep.body match {
+          case Right(x) =>
+            (Json.parse(x) \ "status").asOpt[String].getOrElse("") == "success"
+          case Left(e) =>
+            println(s"FetchOneObserver Exception: $e")
+            false
+        }
+      }
+    }
   }
 
   def updateOneObserver(observerOld: (String, String), observerNew: (String, String)): Future[Boolean] = {
-    Future.successful(true)
+    getApiKey().map { keys =>
+      if (keys._2.isEmpty) {
+        false
+      } else {
+        val toSend = Json.obj("apiKey" -> keys._2,
+          "nickname" -> observerNew._1, "observeUrl" -> observerNew._2,
+          "nicknameOld" -> observerOld._1, "observeUrlOld" -> observerOld._2
+        )
+        val req = sttp.post(uri"$remoteCenterURL/updateOneObserver")
+          .header("Content-Type", "application/json")
+          .body(Json.stringify(toSend))
+        val rep = req.send()
+
+        rep.body match {
+          case Right(x) =>
+            (Json.parse(x) \ "status").asOpt[String].getOrElse("") == "success"
+          case Left(e) =>
+            println(s"FetchOneObserver Exception: $e")
+            false
+        }
+      }
+    }
   }
 
   def fetchAllObservers(): Future[Array[(String, String)]] = {
-    // TODO
-    Future.successful(Array[(String, String)]())
+    getApiKey().map { keys =>
+      if (keys._2.isEmpty) {
+        Array.empty[(String, String)]
+      } else {
+        val toSend = Json.obj("apiKey" -> keys._2)
+        val req = sttp.post(uri"$remoteCenterURL/fetchAllObservers")
+          .header("Content-Type", "application/json")
+          .body(Json.stringify(toSend))
+        val rep = req.send()
+
+        rep.body match {
+          case Right(x) =>
+            val result = (Json.parse(x) \ "data").asOpt[(Seq[ObserverRow], Int)]
+            if (result.isDefined) {
+              result.get._1.map(i => (i.nickname, i.observeUrl)).toArray
+            } else {
+              Array.empty[(String, String)]
+            }
+          case Left(e) =>
+            println(s"FetchOneObserver Exception: $e")
+            Array.empty[(String, String)]
+        }
+      }
+    }
   }
 
 }
