@@ -28,6 +28,8 @@ class FetchCenter @Inject() (appLifecycle: ApplicationLifecycle,
   val zoneId: ZoneId = ZoneId.of("Asia/Shanghai")
   implicit val timeout: Timeout = 3600.seconds
 
+  val ecBlocking: ExecutionContext = actorSystem.dispatchers.lookup("blockingPool")
+
   val fetchMode = configuration.underlying.getString("FetchMode")
 
   var observersCache = Array[(String, String)]()
@@ -45,7 +47,7 @@ class FetchCenter @Inject() (appLifecycle: ApplicationLifecycle,
                 val idx = i._2 % 5
                 (fetchers(idx) ? FetchModeCH(i._1)).mapTo[Option[(Int, Int)]]
               }
-            ).map { result =>
+            )(implicitly, ecBlocking).map { result =>
               val costTime = OffsetDateTime.now(zoneId).toInstant.toEpochMilli - startTime
               val totalNum = result.length
               val errNum = result.count(i => i.isEmpty)
@@ -75,7 +77,7 @@ class FetchCenter @Inject() (appLifecycle: ApplicationLifecycle,
         val idx = i._2 % 5
         (fetchers(idx) ? FetchModeCH(("", i._1))).mapTo[Option[(Int, Int)]]
       }
-    ).map {
+    )(implicitly, ecBlocking).map {
       result =>
         println(result)
         val costTime = OffsetDateTime.now(zoneId).toInstant.toEpochMilli - startTime

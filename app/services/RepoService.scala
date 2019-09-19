@@ -2,6 +2,7 @@ package services
 
 import java.time.{OffsetDateTime, ZoneId}
 
+import akka.actor.ActorSystem
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
 import play.api.cache.SyncCacheApi
@@ -13,7 +14,8 @@ import slick.jdbc.JdbcProfile
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class RepoService @Inject()(val dbConfigProvider: DatabaseConfigProvider,
+class RepoService @Inject()(actorSystem: ActorSystem,
+                            val dbConfigProvider: DatabaseConfigProvider,
                             val configuration: Configuration,
                             val cache: SyncCacheApi,
                             val repoDao: RepoDao)
@@ -26,6 +28,8 @@ class RepoService @Inject()(val dbConfigProvider: DatabaseConfigProvider,
   val zoneId: ZoneId = ZoneId.of("Asia/Shanghai")
 
   val saltValue = "mol-rand-salt"
+
+  val ecBlocking: ExecutionContext = actorSystem.dispatchers.lookup("blockingPool")
 
   def queryAllUser(offset: Int, size: Int, search: Option[String], apiCount: Option[Int], sortBy: String) = {
     val _query = repoDao.User.filter { row =>
@@ -160,7 +164,7 @@ class RepoService @Inject()(val dbConfigProvider: DatabaseConfigProvider,
             case None =>
               None
           }
-        }).flatMap { ms =>
+        })(implicitly, ecBlocking).flatMap { ms =>
           val toAdd = ms.filter(_.isDefined).map(_.get)
           db.run(repoDao.Monitor returning repoDao.Monitor.map(_.id) ++= toAdd).map(_ => true)
         }
@@ -231,7 +235,7 @@ class RepoService @Inject()(val dbConfigProvider: DatabaseConfigProvider,
               val openLink = item._1.salt(saltValue).crc32 + item._2.salt(saltValue).crc32
               repoDao.ObserverAuto.insert(ObserverRow(0, ids._1, ids._2, item._1, item._2, now, openLink)).map(_ => true)
           }
-        }).map(_ => true)
+        })(implicitly, ecBlocking).map(_ => true)
       case None =>
         Future.successful(false)
     }
