@@ -32,7 +32,7 @@ class FetchCenter @Inject() (appLifecycle: ApplicationLifecycle,
 
   val fetchMode = configuration.underlying.getString("FetchMode")
 
-  var observersCache = Array[(String, String)]()
+  var observersCache = List[(String, String)]()
 
   actorSystem.scheduler.schedule(5.minutes, 60.minutes) {
     val nowTime = OffsetDateTime.now(zoneId)
@@ -42,12 +42,12 @@ class FetchCenter @Inject() (appLifecycle: ApplicationLifecycle,
         val startTime = nowTime.toInstant.toEpochMilli
         fetchMode match {
           case "FetchModeCH" =>
-            Future.sequence(
+            Future.sequence {
               observersCache.zipWithIndex.map { i =>
                 val idx = i._2 % 5
                 (fetchers(idx) ? FetchModeCH(i._1)).mapTo[Option[(Int, Int)]]
               }
-            )(implicitly, ecBlocking).map { result =>
+            }(implicitly, ecBlocking).map { result =>
               val costTime = OffsetDateTime.now(zoneId).toInstant.toEpochMilli - startTime
               val totalNum = result.length
               val errNum = result.count(i => i.isEmpty)
@@ -72,12 +72,12 @@ class FetchCenter @Inject() (appLifecycle: ApplicationLifecycle,
 
   def testFetch() = {
     val startTime = OffsetDateTime.now(zoneId).toInstant.toEpochMilli
-    Future.sequence(
-      fetchService.testObservers.zipWithIndex.map{ i =>
+    Future.sequence {
+      fetchService.testObservers.zipWithIndex.map { i =>
         val idx = i._2 % 5
         (fetchers(idx) ? FetchModeCH(("", i._1))).mapTo[Option[(Int, Int)]]
       }
-    )(implicitly, ecBlocking).map {
+    }(implicitly, ecBlocking).map {
       result =>
         println(result)
         val costTime = OffsetDateTime.now(zoneId).toInstant.toEpochMilli - startTime
@@ -106,7 +106,7 @@ class FetchCenter @Inject() (appLifecycle: ApplicationLifecycle,
   def addAllObservers(observers: Array[(String, String)]) = {
     apiService.addAllObservers(observers).map {
       case true =>
-        observersCache = (observersCache.toSet ++ observers).toArray
+        observersCache = (observersCache.toSet ++ observers).toList
         true
       case false =>
         false
@@ -138,7 +138,7 @@ class FetchCenter @Inject() (appLifecycle: ApplicationLifecycle,
       case true =>
         val idx = observersCache.indexWhere(i => i._1 == observerOld._1 && i._2 == observerOld._2)
         if (idx >= 0) {
-          observersCache.update(idx, observerNew)
+          observersCache = observersCache.updated(idx, observerNew)
         }
         true
       case false =>

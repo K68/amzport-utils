@@ -192,10 +192,10 @@ class ApiService @Inject() (
     }
   }
 
-  def fetchAllObservers(): Future[Array[(String, String)]] = {
+  def fetchAllObservers(): Future[List[(String, String)]] = {
     getApiKey().map { keys =>
       if (keys._2.isEmpty) {
-        Array.empty[(String, String)]
+        List.empty[(String, String)]
       } else {
         val toSend = Json.obj("apiKey" -> keys._2)
         val req = sttp.post(uri"$remoteCenterURL/fetchAllObservers")
@@ -207,13 +207,13 @@ class ApiService @Inject() (
           case Right(x) =>
             val result = (Json.parse(x) \ "data").asOpt[(Seq[ObserverRow], Int)]
             if (result.isDefined) {
-              result.get._1.map(i => (i.nickname, i.observeUrl)).toArray
+              result.get._1.map(i => (i.nickname, i.observeUrl)).toList
             } else {
-              Array.empty[(String, String)]
+              List.empty[(String, String)]
             }
           case Left(e) =>
             println(s"FetchAllObservers Exception: $e")
-            Array.empty[(String, String)]
+            List.empty[(String, String)]
         }
       }
     }
