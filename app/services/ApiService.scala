@@ -116,7 +116,7 @@ class ApiService @Inject() (
           case Right(x) =>
             (Json.parse(x) \ "status").asOpt[String].getOrElse("") == "success"
           case Left(e) =>
-            println(s"FetchOneObserver Exception: $e")
+            println(s"AddAllObservers Exception: $e")
             false
         }
       }
@@ -138,7 +138,7 @@ class ApiService @Inject() (
           case Right(x) =>
             (Json.parse(x) \ "status").asOpt[String].getOrElse("") == "success"
           case Left(e) =>
-            println(s"FetchOneObserver Exception: $e")
+            println(s"AddOneObserver Exception: $e")
             false
         }
       }
@@ -160,7 +160,7 @@ class ApiService @Inject() (
           case Right(x) =>
             (Json.parse(x) \ "status").asOpt[String].getOrElse("") == "success"
           case Left(e) =>
-            println(s"FetchOneObserver Exception: $e")
+            println(s"RemoveOneObserver Exception: $e")
             false
         }
       }
@@ -185,7 +185,7 @@ class ApiService @Inject() (
           case Right(x) =>
             (Json.parse(x) \ "status").asOpt[String].getOrElse("") == "success"
           case Left(e) =>
-            println(s"FetchOneObserver Exception: $e")
+            println(s"UpdateOneObserver Exception: $e")
             false
         }
       }
@@ -212,8 +212,30 @@ class ApiService @Inject() (
               Array.empty[(String, String)]
             }
           case Left(e) =>
-            println(s"FetchOneObserver Exception: $e")
+            println(s"FetchAllObservers Exception: $e")
             Array.empty[(String, String)]
+        }
+      }
+    }
+  }
+
+  def syncFetchMonitorToRemote(logs: Seq[String]): Future[Boolean] = {
+    getApiKey().map { keys =>
+      if (keys._2.isEmpty) {
+        false
+      } else {
+        val toSend = Json.obj("apiKey" -> keys._2, "logs" -> logs)
+        val req = sttp.post(uri"$remoteCenterURL/syncFetchMonitorToRemote")
+          .header("Content-Type", "application/json")
+          .body(Json.stringify(toSend))
+        val rep = req.send()
+
+        rep.body match {
+          case Right(x) =>
+            (Json.parse(x) \ "status").asOpt[String].getOrElse("") == "success"
+          case Left(e) =>
+            println(s"SyncFetchMonitorToRemote Exception: $e")
+            false
         }
       }
     }

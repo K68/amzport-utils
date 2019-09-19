@@ -19,6 +19,12 @@ POST    /localLogin                 controllers.LocalController.localLogin
 
 POST    /localLogout                controllers.LocalController.localLogout
 
+POST    /queryLogs                  controllers.LocalController.queryLogs
+
+POST    /initAllObserversFromApi    controllers.LocalController.initAllObserversFromApi
+
+POST    /queryLocalObservers        controllers.LocalController.queryObservers
+
 POST    /importObservers            controllers.LocalController.importObservers
 
 POST    /addOneObserver             controllers.LocalController.addOneObserver
@@ -61,3 +67,5 @@ POST    /removeOneObserver          controllers.RemoteController.removeOneObserv
 POST    /updateOneObserver          controllers.RemoteController.updateOneObserver
 
 POST    /addAllObservers            controllers.RemoteController.addAllObservers
+
+POST    /syncFetchMonitorToRemote   controllers.RemoteController.syncFetchMonitorToRemote

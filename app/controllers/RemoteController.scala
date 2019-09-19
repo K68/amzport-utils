@@ -312,4 +312,16 @@ class RemoteController @Inject()(cc: ControllerComponents,
     }
   }
 
+  def syncFetchMonitorToRemote(): Action[JsValue] = Action.async(parse.json) { req =>
+    val apiKey = (req.body \ "apiKey").as[String]
+    val logs = (req.body \ "logs").as[List[String]]
+
+    repoService.syncMonitor(apiKey, logs).map {
+      case true =>
+        Ok(obj(fields = "data" -> true,  "status" -> "success"))
+      case false =>
+        Ok(obj(fields = "data" -> false,  "status" -> "error"))
+    }
+  }
+
 }

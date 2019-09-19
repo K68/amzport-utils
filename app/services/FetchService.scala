@@ -54,14 +54,12 @@ class FetchService @Inject()(configuration: Configuration,
   )
 
   def fetchOneObserver(observer: String): Option[String] = {
-    val startTime = OffsetDateTime.now().toInstant.toEpochMilli
     val req1 = sttp.get(uri"$observer")
     val rep1 = req1.send()
     val timestamp = OffsetDateTime.now().toInstant.toEpochMilli
     val req2 = sttp.get(uri"$statsFetchURL?_=$timestamp").cookies(rep1)
     val rep2 = req2.send()
-    val costTime = OffsetDateTime.now().toInstant.toEpochMilli - startTime
-    println(s"CostTime: $costTime ms")
+
     rep2.body match {
       case Right(x) => Some(x)
       case Left(e) =>

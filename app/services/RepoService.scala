@@ -148,6 +148,27 @@ class RepoService @Inject()(val dbConfigProvider: DatabaseConfigProvider,
 
   // 通过Api调用的接口
 
+  def syncMonitor(apiKey: String, logs: List[String]): Future[Boolean] = {
+    db.run(repoDao.ApiAssets.filter(_.keyValue === apiKey).map(i => (i.userId, i.id)).result.headOption).flatMap {
+      case Some(ids) =>
+        Future.sequence(logs.map{ l =>
+          val la = l.split(",")
+          // s"$obsvName,$obsvUrl,$costTime,$total,$alive,$timestamp"
+          db.run(repoDao.Observer.filter(_.nickname === la(0)).filter(_.observeUrl === la(1)).map(_.id).result.headOption).map {
+            case Some(obId) =>
+              Some(MonitorRow(0, obId, ids._1, ids._2, OffsetDateTime.parse(la(5)), la(4).toInt, la(3).toInt))
+            case None =>
+              None
+          }
+        }).flatMap { ms =>
+          val toAdd = ms.filter(_.isDefined).map(_.get)
+          db.run(repoDao.Monitor returning repoDao.Monitor.map(_.id) ++= toAdd).map(_ => true)
+        }
+      case None =>
+        Future.successful(false)
+    }
+  }
+
   def fetchAllObservers(apiKey: String): Future[(Seq[ObserverRow], Int)] = {
     db.run(repoDao.ApiAssets.filter(_.keyValue === apiKey).map(i => (i.userId, i.id)).result.headOption).flatMap {
       case Some(ids) =>

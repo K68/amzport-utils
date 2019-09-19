@@ -78,6 +78,53 @@ class LocalController @Inject()(cc: ControllerComponents,
     }
   }
 
+  def initAllObserversFromApi(): Action[JsValue] = Action.async(parse.json) { req =>
+    req.session.get("localAuthed") match {
+      case Some(_) =>
+        val timestamp = (req.body \ "timestamp").as[OffsetDateTime]
+        val timeAbs = Math.abs(OffsetDateTime.now().toEpochSecond - timestamp.toEpochSecond)
+        if (timeAbs < 5) {
+          fetchCenter.initAllObserversFromApi().map { _ =>
+            Ok(obj(fields = "data" -> true, "status" -> "success"))
+          }
+        } else {
+          Future.successful(Ok(obj(fields = "data" -> "请求不合法",  "status" -> "error")))
+        }
+      case None =>
+        Future.successful(Ok(obj(fields = "data" -> "请求不合法",  "status" -> "error")))
+    }
+  }
+
+  def queryLogs(): Action[JsValue] = Action.async(parse.json) { req =>
+    req.session.get("localAuthed") match {
+      case Some(_) =>
+        val lastTime = (req.body \ "lastTime").as[OffsetDateTime]
+
+        fetchCenter.queryLogs(lastTime).map { i =>
+          val r1 = i._1.map(j => Json.obj("log" -> j._1, "time" -> j._2))
+          val r2 = i._2.map(j => Json.obj("log" -> j._1, "time" -> j._2))
+          val r3 = i._3.map(j => Json.obj("log" -> j._1, "time" -> j._2))
+
+          Ok(obj(fields = "data" -> Json.obj("lg1" -> r1, "lg2" -> r2, "lg3" -> r3), "status" -> "success"))
+        }
+      case None =>
+        Future.successful(Ok(obj(fields = "data" -> "请求不合法",  "status" -> "error")))
+    }
+  }
+
+  def queryObservers(): Action[JsValue] = Action.async(parse.json) { req =>
+    req.session.get("localAuthed") match {
+      case Some(_) =>
+        val searchName = (req.body \ "searchName").asOpt[String]
+        val searchObsv = (req.body \ "searchObsv").asOpt[String]
+
+        val result = fetchCenter.queryObservers(searchName, searchObsv).map(i => Json.obj("name" -> i._1, "url" -> i._2))
+        Future.successful(Ok(obj(fields = "data" -> result,  "status" -> "success")))
+      case None =>
+        Future.successful(Ok(obj(fields = "data" -> "请求不合法",  "status" -> "error")))
+    }
+  }
+
   def importObservers(): Action[MultipartFormData[Files.TemporaryFile]] = Action.async(parse.multipartFormData) { req =>
     req.session.get("localAuthed") match {
       case Some(_) =>
