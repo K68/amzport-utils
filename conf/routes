@@ -13,59 +13,65 @@ GET     /assets/*file               controllers.Assets.versioned(path="/public",
 
 # GET     /test                       controllers.LocalController.testFetch
 
-POST    /setApiKey                  controllers.LocalController.setApiKey
+POST    /api/setApiKey                  controllers.LocalController.setApiKey
 
-POST    /localLogin                 controllers.LocalController.localLogin
+POST    /api/localLogin                 controllers.LocalController.localLogin
 
-POST    /localLogout                controllers.LocalController.localLogout
+POST    /api/localLogout                controllers.LocalController.localLogout
 
-POST    /queryLogs                  controllers.LocalController.queryLogs
+POST    /api/queryLogs                  controllers.LocalController.queryLogs
 
-POST    /initAllObserversFromApi    controllers.LocalController.initAllObserversFromApi
+POST    /api/initAllObserversFromApi    controllers.LocalController.initAllObserversFromApi
 
-POST    /queryLocalObservers        controllers.LocalController.queryObservers
+POST    /api/queryLocalObservers        controllers.LocalController.queryObservers
 
-POST    /importObservers            controllers.LocalController.importObservers
+POST    /api/importObservers            controllers.LocalController.importObservers
 
-POST    /addOneObserver             controllers.LocalController.addOneObserver
+POST    /api/addOneObserver             controllers.LocalController.addOneObserver
 
-POST    /removeOneObserver          controllers.LocalController.removeOneObserver
+POST    /api/removeOneObserver          controllers.LocalController.removeOneObserver
 
-POST    /updateOneObserver          controllers.LocalController.updateOneObserver
+POST    /api/updateOneObserver          controllers.LocalController.updateOneObserver
 
 
-POST    /queryAllUser               controllers.RemoteController.queryAllUser
+POST    /api/queryAllUser               controllers.RemoteController.queryAllUser
 
-POST    /queryUserApiKey            controllers.RemoteController.queryUserApiKey
+POST    /api/queryUserApiKey            controllers.RemoteController.queryUserApiKey
 
-POST    /queryUserObserver          controllers.RemoteController.queryUserObserver
+POST    /api/queryUserObserver          controllers.RemoteController.queryUserObserver
 
-POST    /queryObserverMonitor       controllers.RemoteController.queryObserverMonitor
+POST    /api/queryObserverMonitor       controllers.RemoteController.queryObserverMonitor
 
-POST    /login                      controllers.RemoteController.login
+POST    /api/customObserver             controllers.RemoteController.customObserver
 
-POST    /logout                     controllers.RemoteController.logout
+POST    /api/login                      controllers.RemoteController.login
 
-POST    /addUser                    controllers.RemoteController.addUser
+POST    /api/logout                     controllers.RemoteController.logout
 
-POST    /updateUserPassword         controllers.RemoteController.updateUserPassword
+POST    /api/addUser                    controllers.RemoteController.addUser
 
-POST    /updateUserApiLimit         controllers.RemoteController.updateUserApiLimit
+POST    /api/updateUserPassword         controllers.RemoteController.updateUserPassword
 
-POST    /updateSelfPassword         controllers.RemoteController.updateSelfPassword
+POST    /api/updateUserApiLimit         controllers.RemoteController.updateUserApiLimit
 
-POST    /addSelfApiKey              controllers.RemoteController.addSelfApiKey
+POST    /api/updateSelfPassword         controllers.RemoteController.updateSelfPassword
 
-POST    /updateSelfApiKey           controllers.RemoteController.updateSelfApiKey
+POST    /api/addSelfApiKey              controllers.RemoteController.addSelfApiKey
 
-POST    /fetchAllObservers          controllers.RemoteController.fetchAllObservers
+POST    /api/updateSelfApiKey           controllers.RemoteController.updateSelfApiKey
 
-POST    /addOneObserver             controllers.RemoteController.addOneObserver
+POST    /api/fetchAllObservers          controllers.RemoteController.fetchAllObservers
 
-POST    /removeOneObserver          controllers.RemoteController.removeOneObserver
+POST    /api/addOneObserverRemote       controllers.RemoteController.addOneObserver
 
-POST    /updateOneObserver          controllers.RemoteController.updateOneObserver
+POST    /api/removeOneObserverRemote    controllers.RemoteController.removeOneObserver
 
-POST    /addAllObservers            controllers.RemoteController.addAllObservers
+POST    /api/updateOneObserverRemote    controllers.RemoteController.updateOneObserver
 
-POST    /syncFetchMonitorToRemote   controllers.RemoteController.syncFetchMonitorToRemote
+POST    /api/addAllObservers            controllers.RemoteController.addAllObservers
+
+POST    /api/syncFetchMonitorToRemote   controllers.RemoteController.syncFetchMonitorToRemote
+
+
+
+GET     /*file               controllers.Assets.versioned(path="/public", file: Asset)

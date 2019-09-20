@@ -1,5 +1,7 @@
 package services
 
+import java.io.File
+import java.nio.charset.Charset
 import java.time.{OffsetDateTime, ZoneId}
 
 import actors.{Fetcher, Record}
@@ -12,6 +14,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import actors.Fetcher._
 import akka.util.Timeout
+import com.google.common.io.Files
 import play.api.Configuration
 
 @Singleton
@@ -92,7 +95,7 @@ class FetchCenter @Inject() (appLifecycle: ApplicationLifecycle,
 
   def queryObservers(searchName: Option[String], searchObsv: Option[String]) = {
     observersCache.filter { i =>
-      var result = false
+      var result = true
       if (searchName.isDefined) {
         result = i._1.contains(searchName.get)
       }
@@ -103,7 +106,38 @@ class FetchCenter @Inject() (appLifecycle: ApplicationLifecycle,
     }
   }
 
-  def addAllObservers(observers: Array[(String, String)]) = {
+  def importCsvFile(path: String): Future[String] = {
+    val importFile = new File(path)
+    if (importFile.exists() && importFile.canRead) {
+      val tr = Files.asCharSource(importFile, Charset.forName("utf-8")).readLines()
+      if (tr.size() > 3000) {
+        Future.successful("观察者链接超过3000的上限")
+      } else {
+        var observers = List.empty[(String, String)]
+        tr.forEach { i =>
+          // println(i)
+          if (i.nonEmpty) {
+            val td = i.split(',')
+            if (td.length == 2) {
+              observers = observers :+ (td(0), td(1))
+            }
+          }
+        }
+
+        addAllObservers(observers).map { result =>
+          if (result) {
+            ""
+          } else {
+            "远端同步出错"
+          }
+        }
+      }
+    } else {
+      Future.successful("请求不合法")
+    }
+  }
+
+  def addAllObservers(observers: List[(String, String)]) = {
     apiService.addAllObservers(observers).map {
       case true =>
         observersCache = (observersCache.toSet ++ observers).toList

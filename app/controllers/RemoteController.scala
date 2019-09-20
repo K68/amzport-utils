@@ -113,7 +113,7 @@ class RemoteController @Inject()(cc: ControllerComponents,
 
     repoService.checkLogin(username, password).map {
       case Some(meta) =>
-        Ok(obj(fields = "data" -> true,  "status" -> "success"))
+        Ok(obj(fields = "data" -> s"${meta._1},${meta._2}",  "status" -> "success"))
           .withSession(req.session + ("authed" -> meta._1.toString) + ("userType" -> meta._2.toString))
       case None =>
         Ok(obj(fields = "data" -> "错误可能：1.密码错误 2.初始密码为空",  "status" -> "error"))
@@ -123,7 +123,7 @@ class RemoteController @Inject()(cc: ControllerComponents,
   def logout(): Action[JsValue] = Action.async(parse.json) { req =>
     val timestamp = (req.body \ "timestamp").as[OffsetDateTime]
     val timeAbs = Math.abs(OffsetDateTime.now().toEpochSecond - timestamp.toEpochSecond)
-    if (timeAbs < 5) {
+    if (timeAbs < 3600) {
       Future.successful(Ok(obj(fields = "data" -> true,  "status" -> "success")).withNewSession)
     } else {
       Future.successful(Ok(obj(fields = "data" -> "错误可能：请求不合法",  "status" -> "error")))
@@ -247,6 +247,19 @@ class RemoteController @Inject()(cc: ControllerComponents,
     }
   }
 
+  def customObserver(): Action[JsValue] = Action.async(parse.json) { req =>
+    val openLink = (req.body \ "openLink").as[String]
+    val startTime = (req.body \ "startTime").as[OffsetDateTime]
+    val endTime = (req.body \ "endTime").as[OffsetDateTime]
+
+    if (startTime.plusDays(60).isBefore(endTime)) {
+      Future.successful(Ok(obj(fields = "data" -> "请求不合法",  "status" -> "error")))
+    } else {
+      repoService.queryObserverMonitorByOpenLink(openLink, startTime, endTime).map { res =>
+        Ok(obj(fields = "data" -> res,  "status" -> "success"))
+      }
+    }
+  }
 
   // 通过Api调用的接口
 

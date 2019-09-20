@@ -31,11 +31,6 @@ libraryDependencies ++= Seq(
   // sttp
   "com.softwaremill.sttp" %% "core" % "1.6.5",
 
-  // csv tools
-  "com.nrinaudo" %% "kantan.csv" % "0.5.1",
-  "com.nrinaudo" %% "kantan.csv-java8" % "0.5.1",
-  "com.nrinaudo" %% "kantan.csv-generic" % "0.5.1",
-
   // hash helper
   "com.roundeights" %% "hasher" % "1.2.0"
 

@@ -22,7 +22,7 @@ class Fetcher(fc: FetchCenter) extends Actor {
       val costTime = OffsetDateTime.now().toInstant.toEpochMilli - startTime
       val toSend = fc.fetchService.parseFetchResult(fetchOne)
       if (toSend.isDefined) {
-        fc.recorder ! Record.LogFetch(observer._1, observer._2, costTime, toSend.get._1 + toSend.get._2, toSend.get._2, OffsetDateTime.now(zoneId))
+        fc.recorder ! Record.LogFetch(observer._1, observer._2, costTime, toSend.get._1 + toSend.get._2, toSend.get._1, OffsetDateTime.now(zoneId))
       } else {
         fc.recorder ! Record.LogFetch(observer._1, observer._2, costTime, 0, 0, OffsetDateTime.now(zoneId))
       }

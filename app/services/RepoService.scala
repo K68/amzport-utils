@@ -96,6 +96,12 @@ class RepoService @Inject()(actorSystem: ActorSystem,
     db.run(query.sortBy(_.timeshoot).result)
   }
 
+  def queryObserverMonitorByOpenLink(openLink: String, startTime: OffsetDateTime, endTime: OffsetDateTime): Future[Seq[MonitorRow]] = {
+    var query = repoDao.Observer.filter(_.openLink === openLink).join(repoDao.Monitor)
+      .on(_.id === _.observerId).filter(_._2.timeshoot >= startTime).filter(_._2.timeshoot < endTime).map(_._2)
+    db.run(query.sortBy(_.timeshoot).result)
+  }
+
   def checkLogin(name: String, password: String): Future[Option[(Int, Int)]] = {
     val passwd = password.salt(saltValue).sha1.hex
     db.run(repoDao.User.filter(_.loginName === name)
@@ -185,7 +191,7 @@ class RepoService @Inject()(actorSystem: ActorSystem,
   def addOneObserver(apiKey: String, nickname: String, observeUrl: String): Future[Boolean] = {
     db.run(repoDao.ApiAssets.filter(_.keyValue === apiKey).map(i => (i.userId, i.id)).result.headOption).flatMap {
       case Some(ids) =>
-        val openLink = nickname.salt(saltValue).crc32 + observeUrl.salt(saltValue).crc32
+        val openLink = nickname.salt(saltValue).crc32.hex + observeUrl.salt(saltValue).crc32.hex
         repoDao.ObserverAuto.insert(ObserverRow(0, ids._1, ids._2, nickname, observeUrl, OffsetDateTime.now(zoneId), openLink)).map(_ => true)
       case None =>
         Future.successful(false)

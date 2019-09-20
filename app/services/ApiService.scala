@@ -59,10 +59,10 @@ class ApiService @Inject() (
   private def _setApiKey(apiKey: String, localPasswd: String): Future[String] = {
     val passwd = localPasswd.salt(saltValue).sha1.hex
     val setToCache = s"$passwd#!#$apiKey"
-    cache.set("API_KEY", apiKey, Duration.Inf).map { _ =>
+    cache.set("API_KEY", setToCache, Duration.Inf).map { _ =>
       val rootPath = environment.rootPath
       val outPut = new File(rootPath, "meta.json")
-      val meta = Json.obj("api" -> apiKey)
+      val meta = Json.obj("api" -> setToCache)
       try {
         Files.write(meta.toString().getBytes, outPut)
         ""
@@ -100,7 +100,7 @@ class ApiService @Inject() (
     }
   }
 
-  def addAllObservers(observers: Array[(String, String)]): Future[Boolean] = {
+  def addAllObservers(observers: List[(String, String)]): Future[Boolean] = {
     getApiKey().map { keys =>
       if (keys._2.isEmpty) {
         false
@@ -129,7 +129,7 @@ class ApiService @Inject() (
         false
       } else {
         val toSend = Json.obj("apiKey" -> keys._2, "nickname" -> observer._1, "observeUrl" -> observer._2)
-        val req = sttp.post(uri"$remoteCenterURL/addOneObserver")
+        val req = sttp.post(uri"$remoteCenterURL/addOneObserverRemote")
           .header("Content-Type", "application/json")
           .body(Json.stringify(toSend))
         val rep = req.send()
@@ -151,7 +151,7 @@ class ApiService @Inject() (
         false
       } else {
         val toSend = Json.obj("apiKey" -> keys._2, "nickname" -> observer._1, "observeUrl" -> observer._2)
-        val req = sttp.post(uri"$remoteCenterURL/removeOneObserver")
+        val req = sttp.post(uri"$remoteCenterURL/removeOneObserverRemote")
           .header("Content-Type", "application/json")
           .body(Json.stringify(toSend))
         val rep = req.send()
@@ -176,7 +176,7 @@ class ApiService @Inject() (
           "nickname" -> observerNew._1, "observeUrl" -> observerNew._2,
           "nicknameOld" -> observerOld._1, "observeUrlOld" -> observerOld._2
         )
-        val req = sttp.post(uri"$remoteCenterURL/updateOneObserver")
+        val req = sttp.post(uri"$remoteCenterURL/updateOneObserverRemote")
           .header("Content-Type", "application/json")
           .body(Json.stringify(toSend))
         val rep = req.send()

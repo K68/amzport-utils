@@ -4,17 +4,15 @@ import java.io.File
 import java.time.OffsetDateTime
 
 import javax.inject._
+import play.api.Environment
 import play.api.libs.Files
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.json.Json.obj
 import play.api.mvc._
 import services.{ApiService, FetchCenter}
-import kantan.csv._
-import kantan.csv.ops._
-import kantan.csv.generic._
-import kantan.csv.java8._
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 /**
  * This controller creates an `Action` to handle HTTP requests to the
@@ -22,6 +20,7 @@ import scala.concurrent.{ExecutionContext, Future}
  */
 @Singleton
 class LocalController @Inject()(cc: ControllerComponents,
+                                environment: Environment,
                                 fetchCenter: FetchCenter,
                                 apiService: ApiService,
                                 implicit val executionContext: ExecutionContext
@@ -71,7 +70,7 @@ class LocalController @Inject()(cc: ControllerComponents,
   def localLogout(): Action[JsValue] = Action.async(parse.json) { req =>
     val timestamp = (req.body \ "timestamp").as[OffsetDateTime]
     val timeAbs = Math.abs(OffsetDateTime.now().toEpochSecond - timestamp.toEpochSecond)
-    if (timeAbs < 5) {
+    if (timeAbs < 3600) {
       Future.successful(Ok(obj(fields = "data" -> true,  "status" -> "success")).withNewSession)
     } else {
       Future.successful(Ok(obj(fields = "data" -> "错误可能：请求不合法",  "status" -> "error")))
@@ -83,7 +82,7 @@ class LocalController @Inject()(cc: ControllerComponents,
       case Some(_) =>
         val timestamp = (req.body \ "timestamp").as[OffsetDateTime]
         val timeAbs = Math.abs(OffsetDateTime.now().toEpochSecond - timestamp.toEpochSecond)
-        if (timeAbs < 5) {
+        if (timeAbs < 3600) {
           fetchCenter.initAllObserversFromApi().map { _ =>
             Ok(obj(fields = "data" -> true, "status" -> "success"))
           }
@@ -129,27 +128,14 @@ class LocalController @Inject()(cc: ControllerComponents,
     req.session.get("localAuthed") match {
       case Some(_) =>
         req.body.file("importData").map { importData =>
-          val filename = importData.filename
-          val contentType = importData.contentType
-
           if (importData.ref.exists() && importData.ref.isFile && importData.ref.length() > 0) {
-            val importFile = importData.ref.getAbsoluteFile
-
-            if (importFile.exists() && importFile.canRead) {
-              val ifReader = importFile.asCsvReader[(String, String)](rfc)
-              if (ifReader.size > 3000) {
-                Future.successful(Ok(obj(fields = "data" -> "观察者链接超过3000的上限",  "status" -> "error")))
-              } else {
-                val observers = ifReader.toArray.filter(i => i.isRight).map(i => i.right.get)
-                fetchCenter.addAllObservers(observers).map {
-                  case true =>
-                    Ok(obj(fields = "data" -> true,  "status" -> "success")).withNewSession
-                  case false =>
-                    Ok(obj(fields = "data" -> "远端同步出错",  "status" -> "error"))
-                }
-              }
-            } else {
-              Future.successful(Ok(obj(fields = "data" -> "请求不合法",  "status" -> "error")))
+            val tmpFile = new File(s"${environment.rootPath}/importTmp.csv")
+            importData.ref.moveFileTo(tmpFile, true)
+            fetchCenter.importCsvFile(tmpFile.getAbsolutePath).map {
+              case "" =>
+                Ok(obj(fields = "data" -> true, "status" -> "success"))
+              case err: String =>
+                Ok(obj(fields = "data" -> err, "status" -> "error"))
             }
           } else {
             Future.successful(Ok(obj(fields = "data" -> "请求不合法",  "status" -> "error")))
