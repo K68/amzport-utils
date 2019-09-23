@@ -25,7 +25,7 @@ class FetchCenter @Inject() (appLifecycle: ApplicationLifecycle,
                              val apiService: ApiService,
                              implicit val executionContext: ExecutionContext
                             ) {
-  val fetchers = List.range(1, 6).map(i => actorSystem.actorOf(Fetcher.props(this), s"fetcher_$i"))
+  val fetchers = List.range(0, 3).map(i => actorSystem.actorOf(Fetcher.props(this), s"fetcher_$i"))
   val recorder = actorSystem.actorOf(Record.props(), "recorder")
 
   val zoneId: ZoneId = ZoneId.of("Asia/Shanghai")
@@ -47,7 +47,7 @@ class FetchCenter @Inject() (appLifecycle: ApplicationLifecycle,
           case "FetchModeCH" =>
             Future.sequence {
               observersCache.zipWithIndex.map { i =>
-                val idx = i._2 % 5
+                val idx = i._2 % 3
                 (fetchers(idx) ? FetchModeCH(i._1)).mapTo[Option[(Int, Int)]]
               }
             }(implicitly, ecBlocking).map { result =>
@@ -110,8 +110,8 @@ class FetchCenter @Inject() (appLifecycle: ApplicationLifecycle,
     val importFile = new File(path)
     if (importFile.exists() && importFile.canRead) {
       val tr = Files.asCharSource(importFile, Charset.forName("utf-8")).readLines()
-      if (tr.size() > 3000) {
-        Future.successful("观察者链接超过3000的上限")
+      if (tr.size() > 500) {
+        Future.successful("观察者链接超过500的上限")
       } else {
         var observers = List.empty[(String, String)]
         tr.forEach { i =>

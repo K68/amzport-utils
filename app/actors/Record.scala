@@ -42,7 +42,7 @@ class Record extends Actor {
   import Record._
   import scala.collection.mutable
 
-  val LOG_MAX_LENGTH = 6000
+  val LOG_MAX_LENGTH = 3000
 
   val logFetch: mutable.Queue[(String, OffsetDateTime)] = mutable.Queue.empty[(String, OffsetDateTime)]
   val logTasks: mutable.Queue[(String, OffsetDateTime)] = mutable.Queue.empty[(String, OffsetDateTime)]

@@ -182,7 +182,7 @@ class RepoService @Inject()(actorSystem: ActorSystem,
   def fetchAllObservers(apiKey: String): Future[(Seq[ObserverRow], Int)] = {
     db.run(repoDao.ApiAssets.filter(_.keyValue === apiKey).map(i => (i.userId, i.id)).result.headOption).flatMap {
       case Some(ids) =>
-        queryUserObserver(0, 5000, Some(ids._1), Some(ids._2), None)
+        queryUserObserver(0, 1000, Some(ids._1), Some(ids._2), None)
       case None =>
         Future.successful((Seq.empty[ObserverRow], 0))
     }
@@ -219,7 +219,7 @@ class RepoService @Inject()(actorSystem: ActorSystem,
   def updateOneObserver(apiKey: String, nickname: String, observeUrl: String, nicknameOld: String, observeUrlOld: String): Future[Boolean] = {
     db.run(repoDao.ApiAssets.filter(_.keyValue === apiKey).map(i => (i.userId, i.id)).result.headOption).flatMap {
       case Some(ids) =>
-        val openLink = nickname.salt(saltValue).crc32 + observeUrl.salt(saltValue).crc32
+        val openLink = nickname.salt(saltValue).crc32.hex + observeUrl.salt(saltValue).crc32.hex
         db.run(repoDao.Observer.filter(_.userId === ids._1).filter(_.apiAssetsId === ids._2)
           .filter(_.nickname === nicknameOld).filter(_.observeUrl === observeUrlOld)
           .map(i => (i.nickname, i.observeUrl, i.openLink)).update((nickname, observeUrl, openLink))).map(_ => true)
@@ -238,7 +238,7 @@ class RepoService @Inject()(actorSystem: ActorSystem,
             case true =>
               Future.successful(false)
             case false =>
-              val openLink = item._1.salt(saltValue).crc32 + item._2.salt(saltValue).crc32
+              val openLink = item._1.salt(saltValue).crc32.hex + item._2.salt(saltValue).crc32.hex
               repoDao.ObserverAuto.insert(ObserverRow(0, ids._1, ids._2, item._1, item._2, now, openLink)).map(_ => true)
           }
         })(implicitly, ecBlocking).map(_ => true)
