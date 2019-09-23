@@ -49,9 +49,11 @@ class ApiService @Inject() (
         _setApiKey(apiKey, localPasswd)
       } else if (keys._2 == apiKey && localPasswd.nonEmpty) {
         _setApiKey(apiKey, localPasswd)
+      } else if (keys._2 != apiKey && localPasswd.nonEmpty) {
+        _setApiKey(apiKey, localPasswd)
       } else {
         println("设置API_KEY和本地密码不成功")
-        Future.successful("")
+        Future.successful("设置API_KEY和本地密码不成功")
       }
     }
   }

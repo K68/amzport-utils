@@ -13,6 +13,7 @@ import akka.pattern.ask
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import actors.Fetcher._
+import actors.Record.LogApiSync
 import akka.util.Timeout
 import com.google.common.io.Files
 import play.api.Configuration
@@ -64,7 +65,12 @@ class FetchCenter @Inject() (appLifecycle: ApplicationLifecycle,
               recorder ! Record.LogTasks("", costTime, totalNum, errNum, zeroNum, totalMiner, aliveMiner, timestamp)
 
               (recorder ? Record.FetchLogs(nowTime)).mapTo[Seq[(String, OffsetDateTime)]].map { fetchLogs =>
-                apiService.syncFetchMonitorToRemote(fetchLogs.map(_._1))
+                apiService.syncFetchMonitorToRemote(fetchLogs.map(_._1)).map {
+                  case true =>
+                    recorder ! Record.LogApiSync(aliveMiner, true, "", timestamp)
+                  case false =>
+                    recorder ! Record.LogApiSync(aliveMiner, false, "", timestamp)
+                }
               }
             }
 
