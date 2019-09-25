@@ -102,6 +102,10 @@ class RepoService @Inject()(actorSystem: ActorSystem,
     db.run(query.sortBy(_.timeshoot).result)
   }
 
+  def queryObserverByOpenLink(openLink: String): Future[Option[String]] = {
+    db.run(repoDao.Observer.filter(_.openLink === openLink).map(_.observeUrl).result.headOption)
+  }
+
   def checkLogin(name: String, password: String): Future[Option[(Int, Int)]] = {
     val passwd = password.salt(saltValue).sha1.hex
     db.run(repoDao.User.filter(_.loginName === name)

@@ -255,8 +255,13 @@ class RemoteController @Inject()(cc: ControllerComponents,
     if (startTime.plusDays(60).isBefore(endTime)) {
       Future.successful(Ok(obj(fields = "data" -> "请求不合法",  "status" -> "error")))
     } else {
-      repoService.queryObserverMonitorByOpenLink(openLink, startTime, endTime).map { res =>
-        Ok(obj(fields = "data" -> res,  "status" -> "success"))
+      repoService.queryObserverByOpenLink(openLink).flatMap {
+        case Some(url) =>
+          repoService.queryObserverMonitorByOpenLink(openLink, startTime, endTime).map { res =>
+            Ok(obj(fields = "data" -> res, "url" -> url, "status" -> "success"))
+          }
+        case None =>
+          Future.successful(Ok(obj(fields = "data" -> "请求不合法",  "status" -> "error")))
       }
     }
   }
