@@ -7,7 +7,7 @@ import java.time.ZoneId
 import akka.actor.ActorSystem
 import akka.util.Timeout
 import com.google.common.io.Files
-import javax.inject.Inject
+import javax.inject._
 import play.api.Configuration
 import play.api.inject.ApplicationLifecycle
 import com.softwaremill.sttp._
