@@ -41,7 +41,7 @@ class MainService @Inject() (appLifecycle: ApplicationLifecycle,
     importWhiteListFile(WHITE_LIST_PATH)
   }
 
-  actorSystem.scheduler.schedule(5.minutes, 24.hours) {
+  actorSystem.scheduler.schedule(2.minutes, 24.hours) {
     smsBi() match {
       case Some(stat) =>
         val stats = stat.split(',')
@@ -85,7 +85,8 @@ class MainService @Inject() (appLifecycle: ApplicationLifecycle,
   }
 
   private def smsMt(pn: String, msg: String): Option[String] = {
-    val rep = sttp.post(uri"$SMS_POST_URL$SMS_SUB_URL_SEND").body(Map[String, String](
+    val url = s"$SMS_POST_URL$SMS_SUB_URL_SEND"
+    val rep = sttp.post(uri"$url").body(Map[String, String](
       "pn" -> pn,
       "account" -> SMS_AUTH_ACCOUNT,
       "pswd" -> SMS_AUTH_PSWD,
@@ -101,7 +102,8 @@ class MainService @Inject() (appLifecycle: ApplicationLifecycle,
   }
 
   private def smsBi(): Option[String] = {
-    val rep = sttp.post(uri"$SMS_POST_URL$SMS_SUB_URL_STAT").body(Map[String, String](
+    val url = s"$SMS_POST_URL$SMS_SUB_URL_STAT"
+    val rep = sttp.post(uri"$url").body(Map[String, String](
       "account" -> SMS_AUTH_ACCOUNT,
       "pswd" -> SMS_AUTH_PSWD
     )).send()
