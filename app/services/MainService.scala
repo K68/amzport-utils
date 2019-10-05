@@ -45,10 +45,10 @@ class MainService @Inject() (appLifecycle: ApplicationLifecycle,
     smsBi() match {
       case Some(stat) =>
         val stats = stat.split(',')
-        if (stats.length > 2 && stats(2).nonEmpty) {
-          val remain = Try(stats(2).toInt)
+        if (stats.length > 2 && stats(2).trim.nonEmpty) {
+          val remain = Try(stats(2).trim.toInt)
           if (remain.isSuccess && remain.get <= SMS_REMIAN_LIMIT) {
-            smsDynamicCode("18667436829", remain.get.toString)
+            smsDynamicCode("18667436829", remain.get.toString).map(i => println(i))
           }
         }
       case None =>
