@@ -35,9 +35,9 @@ class MainService @Inject() (appLifecycle: ApplicationLifecycle,
   private val zoneId = ZoneId.of("Asia/Shanghai")
   private val ecBlocking = actorSystem.dispatchers.lookup("BlockingPool")
 
-  private var whiteList = List.empty[String]
+  private var whiteListSet = Set.empty[String]
 
-  actorSystem.scheduler.schedule(1.minutes, 10.minutes) {
+  actorSystem.scheduler.schedule(10.seconds, 2.minutes) {
     importWhiteListFile(WHITE_LIST_PATH)
   }
 
@@ -60,18 +60,20 @@ class MainService @Inject() (appLifecycle: ApplicationLifecycle,
     if (importFile.exists() && importFile.canRead) {
       val rows = Files.asCharSource(importFile, Charset.forName("utf-8")).readLines()
       if (rows.size() > 0) {
-        whiteList = List.empty[String]
+        var tmpSet = Set.empty[String]
         rows.forEach { row =>
-          if (row.nonEmpty) {
-            whiteList = whiteList :+ row
+          if (row.nonEmpty && !tmpSet.contains(row)) {
+            tmpSet = tmpSet.+(row)
           }
         }
+
+        whiteListSet = tmpSet.intersect(whiteListSet).union(tmpSet)
       }
     }
   }
 
   def addressInWhiteList(address: String): Boolean = {
-    whiteList.contains(address)
+    whiteListSet.contains(address)
   }
 
   def smsVerificationCode(pn: String, code: String): Future[Option[String]] = {
@@ -84,7 +86,12 @@ class MainService @Inject() (appLifecycle: ApplicationLifecycle,
     Future(smsMt(pn, msg))(ecBlocking)
   }
 
-  private def smsMt(pn: String, msg: String): Option[String] = {
+  def smsCodeDIY(pn: String, code: String, tpl: String): Future[Option[String]] = {
+    val msg = s"【$tpl】您的${tpl}是：$code"
+    Future(smsMt(pn, msg))(ecBlocking)
+  }
+
+  def smsMt(pn: String, msg: String): Option[String] = {
     val url = s"$SMS_POST_URL$SMS_SUB_URL_SEND"
     val rep = sttp.post(uri"$url").body(Map[String, String](
       "pn" -> pn,
@@ -101,7 +108,7 @@ class MainService @Inject() (appLifecycle: ApplicationLifecycle,
     }
   }
 
-  private def smsBi(): Option[String] = {
+  def smsBi(): Option[String] = {
     val url = s"$SMS_POST_URL$SMS_SUB_URL_STAT"
     val rep = sttp.post(uri"$url").body(Map[String, String](
       "account" -> SMS_AUTH_ACCOUNT,

@@ -42,4 +42,34 @@ class HomeController @Inject()(cc: ControllerComponents,
     }
   }
 
+  def smsCodeDIY(): Action[JsValue] = Action.async(parse.json) { req =>
+    if (mainService.addressInWhiteList(req.remoteAddress)) {
+      val pn = (req.body \ "pn").as[String]
+      val code = (req.body \ "code").as[String]
+      val tpl = (req.body \ "tpl").as[String]
+
+      mainService.smsCodeDIY(pn, code, tpl).map {
+        case Some(result) =>
+          Results.Ok(result)
+        case None =>
+          Results.InternalServerError("短信发送异常")
+      }
+    } else {
+      Future.successful(Results.Forbidden("来源地址不合法"))
+    }
+  }
+
+  def fetchBi(): Action[AnyContent] = Action.async { req =>
+    if (mainService.addressInWhiteList(req.remoteAddress)) {
+      Future(mainService.smsBi()).map {
+        case Some(r) =>
+          Results.Ok(r)
+        case None =>
+          Results.Ok("获取短信账户信息出错")
+      }
+    } else {
+      Future.successful(Results.Forbidden("来源地址不合法"))
+    }
+  }
+
 }
