@@ -87,7 +87,7 @@ class MainService @Inject() (appLifecycle: ApplicationLifecycle,
   }
 
   def smsCodeDIY(pn: String, code: String, tpl: String): Future[Option[String]] = {
-    val msg = s"【$tpl】您的${tpl}是：$code"
+    val msg = s"【$tpl】您的验证码是：$code"
     Future(smsMt(pn, msg))(ecBlocking)
   }
 
