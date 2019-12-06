@@ -32,6 +32,12 @@ class MainService @Inject() (appLifecycle: ApplicationLifecycle,
   private val SMS_REMIAN_LIMIT = configuration.underlying.getInt("SMS_REMIAN_LIMIT")
   private val SMS_SUB_URL_SEND = "/mt.ashx"
   private val SMS_SUB_URL_STAT = "/bi.ashx"
+
+  private val SMS_GLOBAL_URL = configuration.underlying.getString("SMS_GLOBAL_URL")
+  private val SMS_GLOBAL_FROM = configuration.underlying.getString("SMS_GLOBAL_FROM")
+  private val SMS_GLOBAL_U = configuration.underlying.getString("SMS_GLOBAL_U")
+  private val SMS_GLOBAL_P = configuration.underlying.getString("SMS_GLOBAL_P")
+
   private val zoneId = ZoneId.of("Asia/Shanghai")
   private val ecBlocking = actorSystem.dispatchers.lookup("BlockingPool")
 
@@ -92,19 +98,28 @@ class MainService @Inject() (appLifecycle: ApplicationLifecycle,
   }
 
   def smsMt(pn: String, msg: String): Option[String] = {
-    val url = s"$SMS_POST_URL$SMS_SUB_URL_SEND"
-    val rep = sttp.post(uri"$url").body(Map[String, String](
-      "pn" -> pn,
-      "account" -> SMS_AUTH_ACCOUNT,
-      "pswd" -> SMS_AUTH_PSWD,
-      "msg" -> msg
-    )).send()
 
-    rep.body match {
-      case Right(x) => Some(x)
-      case Left(e) =>
-        println(s"SMS MT Exception: $e")
-        None
+    if (pn.startsWith("+")) {
+
+      smsGlobal(pn, msg)
+
+    } else {
+
+      val url = s"$SMS_POST_URL$SMS_SUB_URL_SEND"
+      val rep = sttp.post(uri"$url").body(Map[String, String](
+        "pn" -> pn,
+        "account" -> SMS_AUTH_ACCOUNT,
+        "pswd" -> SMS_AUTH_PSWD,
+        "msg" -> msg
+      )).send()
+
+      rep.body match {
+        case Right(x) => Some(x)
+        case Left(e) =>
+          println(s"SMS MT Exception: $e")
+          None
+      }
+
     }
   }
 
@@ -119,6 +134,23 @@ class MainService @Inject() (appLifecycle: ApplicationLifecycle,
       case Right(x) => Some(x)
       case Left(e) =>
         println(s"SMS BI Exception: $e")
+        None
+    }
+  }
+
+  def smsGlobal(pn: String, msg: String): Option[String] = {
+    val rep = sttp.auth.basic(SMS_GLOBAL_U, SMS_GLOBAL_P)
+      .post(uri"$SMS_GLOBAL_URL")
+      .body(Map[String, String](
+        "From" -> SMS_GLOBAL_FROM,
+        "To" -> pn,
+        "Body" -> msg
+      )).send()
+
+    rep.body match {
+      case Right(x) => Some(x)
+      case Left(e) =>
+        println(s"SMS Global Exception: $e")
         None
     }
   }
