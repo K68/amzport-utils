@@ -155,4 +155,36 @@ class MainService @Inject() (appLifecycle: ApplicationLifecycle,
     }
   }
 
+  def smsBatchDIY(accountList: List[String], tpl: String): Future[List[String]] = {
+    Future(smsMts(accountList, tpl))(ecBlocking)
+  }
+
+  def smsMts(accountList: List[String], tpl: String): List[String] = {     // Todo  频率控制，调用太快
+    accountList.map{ list =>
+      val strs = list.split(";", 2)
+      val pn = strs(0)
+      val str = strs(1)
+      val msg = s"【$tpl】您的商品信息是：$str"
+      if (list.startsWith("+")) {
+        smsGlobal(pn, msg)
+
+      } else {
+        val url = s"$SMS_POST_URL$SMS_SUB_URL_SEND"
+        val rep = sttp.post(uri"$url").body(Map[String, String](
+          "pn" -> pn,
+          "account" -> SMS_AUTH_ACCOUNT,
+          "pswd" -> SMS_AUTH_PSWD,
+          "msg" -> msg
+        )).send()
+
+        rep.body match {
+          case Right(x) => Some(x)
+          case Left(e) =>
+            println(s"SMS MT Exception: $e")
+            None
+        }
+
+       }
+    }.filter(_.isDefined).map(j => j.get)
+  }
 }

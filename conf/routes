@@ -15,3 +15,5 @@ POST    /verificationCode           controllers.HomeController.verificationCode
 POST    /sms_code_diy               controllers.HomeController.smsCodeDIY
 
 GET     /fetch_bi                   controllers.HomeController.fetchBi
+
+POST    /sms_batch_diy              controllers.HomeController.smsBatchDIY

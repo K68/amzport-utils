@@ -72,4 +72,16 @@ class HomeController @Inject()(cc: ControllerComponents,
     }
   }
 
+  def smsBatchDIY(): Action[JsValue] = Action.async(parse.json) { req =>
+    if (mainService.addressInWhiteList(req.remoteAddress)) {
+      val accountLists = (req.body \ "accountList").as[List[String]]
+      val tpl = (req.body \ "tpl").as[String]
+      mainService.smsBatchDIY(accountLists, tpl).map { str =>
+          Results.Ok(str.length.toString)
+      }
+    } else {
+      Future.successful(Results.Forbidden("来源地址不合法"))
+    }
+  }
+
 }
