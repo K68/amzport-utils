@@ -164,7 +164,7 @@ class MainService @Inject() (appLifecycle: ApplicationLifecycle,
       val strs = list.split(";", 2)
       val pn = strs(0)
       val str = strs(1)
-      val msg = s"【$tpl】您的商品信息是：$str"
+      val msg = s"【$tpl】$str"
       if (list.startsWith("+")) {
         smsGlobal(pn, msg)
 
