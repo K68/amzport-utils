@@ -1,7 +1,7 @@
 package controllers
 
 import javax.inject._
-import play.api.libs.json.JsValue
+import play.api.libs.json._
 import play.api.mvc._
 import services.MainService
 
@@ -72,9 +72,11 @@ class HomeController @Inject()(cc: ControllerComponents,
     }
   }
 
+//  implicit val listStringFormat: OFormat[List[String]] = Json.format[List[String]]
+
   def smsBatchDIY(): Action[JsValue] = Action.async(parse.json) { req =>
     if (mainService.addressInWhiteList(req.remoteAddress)) {
-      val accountLists = (req.body \ "accountList").as[List[String]]
+      val accountLists = (req.body \ "accountList").as[Array[String]].toList
       val tpl = (req.body \ "tpl").as[String]
       mainService.smsBatchDIY(accountLists, tpl).map { str =>
           Results.Ok(str.length.toString)

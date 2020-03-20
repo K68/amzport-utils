@@ -11,6 +11,7 @@ import javax.inject._
 import play.api.Configuration
 import play.api.inject.ApplicationLifecycle
 import com.softwaremill.sttp._
+import services.ObserverManager.SmsEntity
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -43,11 +44,11 @@ class MainService @Inject() (appLifecycle: ApplicationLifecycle,
 
   private var whiteListSet = Set.empty[String]
 
-  actorSystem.scheduler.schedule(10.seconds, 2.minutes) {
+  actorSystem.scheduler.scheduleWithFixedDelay(10.seconds, 2.minutes) { () =>
     importWhiteListFile(WHITE_LIST_PATH)
   }
 
-  actorSystem.scheduler.schedule(2.minutes, 24.hours) {
+  actorSystem.scheduler.scheduleWithFixedDelay(2.minutes, 24.hours) { () =>
     smsBi() match {
       case Some(stat) =>
         val stats = stat.split(',')
@@ -60,6 +61,11 @@ class MainService @Inject() (appLifecycle: ApplicationLifecycle,
       case None =>
     }
   }
+
+  ObserverManager.subscribe((entity: SmsEntity) => {
+    smsMt(entity.pn, entity.msg, realSend = true)
+    true
+  })
 
   private def importWhiteListFile(path: String): Unit = {
     val importFile = new File(path)
@@ -97,27 +103,29 @@ class MainService @Inject() (appLifecycle: ApplicationLifecycle,
     Future(smsMt(pn, msg))(ecBlocking)
   }
 
-  def smsMt(pn: String, msg: String): Option[String] = {
+  private def smsMt(pn: String, msg: String, realSend: Boolean = false): Option[String] = {
 
-    if (pn.startsWith("+")) {
-
-      smsGlobal(pn, msg)
-
+    if (!realSend) {
+      ObserverManager.notify(SmsEntity(pn, msg))
     } else {
+      if (pn.startsWith("+")) {
+        smsGlobal(pn, msg)
 
-      val url = s"$SMS_POST_URL$SMS_SUB_URL_SEND"
-      val rep = sttp.post(uri"$url").body(Map[String, String](
-        "pn" -> pn,
-        "account" -> SMS_AUTH_ACCOUNT,
-        "pswd" -> SMS_AUTH_PSWD,
-        "msg" -> msg
-      )).send()
+      } else {
+        val url = s"$SMS_POST_URL$SMS_SUB_URL_SEND"
+        val rep = sttp.post(uri"$url").body(Map[String, String](
+          "pn" -> pn,
+          "account" -> SMS_AUTH_ACCOUNT,
+          "pswd" -> SMS_AUTH_PSWD,
+          "msg" -> msg
+        )).send()
 
-      rep.body match {
-        case Right(x) => Some(x)
-        case Left(e) =>
-          println(s"SMS MT Exception: $e")
-          None
+        rep.body match {
+          case Right(x) => Some(x)
+          case Left(e) =>
+            println(s"SMS MT Exception: $e")
+            None
+        }
       }
 
     }
@@ -138,7 +146,7 @@ class MainService @Inject() (appLifecycle: ApplicationLifecycle,
     }
   }
 
-  def smsGlobal(pn: String, msg: String): Option[String] = {
+  private def smsGlobal(pn: String, msg: String): Option[String] = {
     val rep = sttp.auth.basic(SMS_GLOBAL_U, SMS_GLOBAL_P)
       .post(uri"$SMS_GLOBAL_URL")
       .body(Map[String, String](
@@ -159,32 +167,13 @@ class MainService @Inject() (appLifecycle: ApplicationLifecycle,
     Future(smsMts(accountList, tpl))(ecBlocking)
   }
 
-  def smsMts(accountList: List[String], tpl: String): List[String] = {     // Todo  频率控制，调用太快
+  private def smsMts(accountList: List[String], tpl: String): List[String] = {
     accountList.map{ list =>
       val strs = list.split(";", 2)
       val pn = strs(0)
       val str = strs(1)
       val msg = s"【$tpl】$str"
-      if (list.startsWith("+")) {
-        smsGlobal(pn, msg)
-
-      } else {
-        val url = s"$SMS_POST_URL$SMS_SUB_URL_SEND"
-        val rep = sttp.post(uri"$url").body(Map[String, String](
-          "pn" -> pn,
-          "account" -> SMS_AUTH_ACCOUNT,
-          "pswd" -> SMS_AUTH_PSWD,
-          "msg" -> msg
-        )).send()
-
-        rep.body match {
-          case Right(x) => Some(x)
-          case Left(e) =>
-            println(s"SMS MT Exception: $e")
-            None
-        }
-
-       }
+      smsMt(pn, msg)
     }.filter(_.isDefined).map(j => j.get)
   }
 }
