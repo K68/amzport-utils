@@ -39,6 +39,8 @@ class MainService @Inject() (appLifecycle: ApplicationLifecycle,
   private val SMS_GLOBAL_U = configuration.underlying.getString("SMS_GLOBAL_U")
   private val SMS_GLOBAL_P = configuration.underlying.getString("SMS_GLOBAL_P")
 
+  private val SMS_I18N_EN = configuration.underlying.getBoolean("SMS_I18N_EN")
+
   private val zoneId = ZoneId.of("Asia/Shanghai")
   private val ecBlocking = actorSystem.dispatchers.lookup("BlockingPool")
 
@@ -99,7 +101,11 @@ class MainService @Inject() (appLifecycle: ApplicationLifecycle,
   }
 
   def smsCodeDIY(pn: String, code: String, tpl: String): Future[Option[String]] = {
-    val msg = s"【$tpl】您的验证码是：$code"
+    val msg = if (SMS_I18N_EN) {
+      s"【PIN】$code is your $tpl confirmation code"
+    } else {
+      s"【$tpl】您的验证码是：$code"
+    }
     Future(smsMt(pn, msg))(ecBlocking)
   }
 
