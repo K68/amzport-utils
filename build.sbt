@@ -1,6 +1,6 @@
 name := "amzport-utils"
 
-version := "0.3.1"
+version := "0.3.3"
 
 lazy val `amzportutils` = (project in file(".")).enablePlugins(PlayScala)
 

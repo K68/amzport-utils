@@ -61,6 +61,7 @@ class HomeController @Inject()(cc: ControllerComponents,
 
   def fetchBi(): Action[AnyContent] = Action.async { req =>
     if (mainService.addressInWhiteList(req.remoteAddress)) {
+      println("合理请求来源:" + req.remoteAddress)
       Future(mainService.smsBi()).map {
         case Some(r) =>
           Results.Ok(r)
@@ -68,7 +69,7 @@ class HomeController @Inject()(cc: ControllerComponents,
           Results.Ok("获取短信账户信息出错")
       }
     } else {
-      Future.successful(Results.Forbidden("来源地址不合法"))
+      Future.successful(Results.Forbidden("来源地址不合法" + req.remoteAddress))
     }
   }
 

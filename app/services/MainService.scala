@@ -114,13 +114,18 @@ class MainService @Inject() (appLifecycle: ApplicationLifecycle,
     if (!realSend) {
       ObserverManager.notify(SmsEntity(pn, msg))
     } else {
-      if (pn.startsWith("+")) {
+      if (pn.startsWith("+") && !pn.startsWith("+86")) {
         smsGlobal(pn, msg)
 
       } else {
+        val _pn = if (pn.startsWith("+86")) {
+          pn.substring(3)
+        } else {
+          pn
+        }
         val url = s"$SMS_POST_URL$SMS_SUB_URL_SEND"
         val rep = sttp.post(uri"$url").body(Map[String, String](
-          "pn" -> pn,
+          "pn" -> _pn,
           "account" -> SMS_AUTH_ACCOUNT,
           "pswd" -> SMS_AUTH_PSWD,
           "msg" -> msg
